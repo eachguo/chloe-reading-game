@@ -7,25 +7,29 @@ def set_macaron_warm_background():
     """设置马卡龙暖色系背景（浅蜜桃色+淡云朵，低饱和度，不喧宾夺主）"""
     background_css = """
     <style>
-    /* 整体背景：马卡龙浅蜜桃色+淡图案 */
+    /* 整体背景：马卡龙浅蜜桃色+淡云朵 */
     .stApp {
-        background-color: #fff3e6;  /* 马卡龙暖调浅蜜桃，柔和不刺眼 */
-        background-image: url("https://picsum.photos/id/1076/1920/1080");  /* 淡云朵童趣图案，无版权 */
+        background-color: #fff3e6;
+        background-image: url("https://picsum.photos/id/1076/1920/1080");
         background-size: cover;
-        background-opacity: 0.06;  /* 透明度6%，几乎不影响阅读，只留氛围感 */
+        background-opacity: 0.06;
         background-repeat: no-repeat;
         background-attachment: fixed;
     }
-    /* 文本区域优化：加半透明白底，保证字迹清晰 */
+    /* 文本区域优化 */
     .stExpander, .stHeader, .stSuccess, .stButton > button {
         background-color: rgba(255, 255, 255, 0.95) !important;
         border-radius: 8px !important;
         padding: 10px !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.03);  /* 轻微阴影，更有层次感 */
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     }
-    /* 双语标题美化 */
+    /* 标题颜色统一为马卡龙暖橘色 */
     h1, h2, h3, h4 {
-        color: #d48b6b !important;  /* 马卡龙暖橘色，呼应整体色调 */
+        color: #d48b6b !important;
+    }
+    /* 分割线颜色统一为马卡龙暖橘色 */
+    .stDivider {
+        border-top: 2px solid #d48b6b !important;
     }
     </style>
     """
@@ -45,8 +49,8 @@ set_macaron_warm_background()
 st.title("📚 Chloe's 双语阅读小屋 | Chloe's Bilingual Reading Hut")
 story_topic_cn = "《安妮的绿山墙》"
 story_topic_en = "Anne of Green Gables"
-st.subheader(f"—— {story_topic_cn} 专属阅读版 | Exclusive Reading Edition of {story_topic_en}", divider="#d48b6b")
-st.markdown("---")
+st.subheader(f"—— {story_topic_cn} 专属阅读版 | Exclusive Reading Edition of {story_topic_en}")
+st.divider()
 
 # ---------------------- 第一部分：中英双语段落（双语标题，清晰排版） ----------------------
 st.header("✨ 趣味段落阅读 | Fun Paragraph Reading", anchor=False, help="中英对照，轻松阅读 | Bilingual Comparison, Easy to Read")
@@ -69,7 +73,7 @@ with st.expander("📝 点击展开「中文翻译」 | Click to Expand [Chinese
 对她来说，即便生活艰难，这个世界也依然充满了魔法与美好。"""
     st.markdown(f"<p style='line-height: 1.8; font-size: 16px; color: #333;'>{chinese_paragraph}</p>", unsafe_allow_html=True)
 
-st.markdown("---")
+st.divider()
 
 # ---------------------- 第二部分：小思考问题（双语标题） ----------------------
 st.header("🤔 小思考问题 | Little Thinking Questions", anchor=False, help="试着回答一下吧！ | Try to answer them!")
@@ -82,7 +86,7 @@ questions = [
 for q in questions:
     st.write(f"✅ {q}")
 
-st.markdown("---")
+st.divider()
 
 # ---------------------- 第三部分：互动式单词配对游戏（可画线，对错反馈） ----------------------
 st.header("🎮 单词配对小游戏 | Word Matching Game", anchor=False, help="轻松记单词，快乐学英语 | Remember words easily, learn English happily")
@@ -113,14 +117,14 @@ with col2:
 # 互动画布（支持鼠标画线，适配暖色系）
 st.markdown("### 🎨 点击下方画布开始画线配对 | Click the canvas below to start drawing lines")
 canvas_result = st_canvas(
-    fill_color="rgba(255, 255, 255, 0.0)",  # 填充色透明
-    stroke_width=3,  # 线条宽度
-    stroke_color="#d48b6b",  # 线条颜色：马卡龙暖橘，呼应整体色调
-    background_color="#fdf6f0",  # 画布背景：浅于整体背景，清晰可见
+    fill_color="rgba(255, 255, 255, 0.0)",
+    stroke_width=3,
+    stroke_color="#d48b6b",
+    background_color="#fdf6f0",
     update_streamlit=True,
-    height=300,  # 画布高度
-    width=600,  # 画布宽度
-    drawing_mode="freedraw",  # 自由画线模式
+    height=300,
+    width=600,
+    drawing_mode="freedraw",
     key="canvas",
 )
 
@@ -153,7 +157,7 @@ with st.expander("🎉 点击查看「正确答案」 | Click to View [Correct A
     5. magic —— E. 魔法 | E. Magic
     """)
 
-st.markdown("---")
+st.divider()
 
 # ---------------------- 底部结束语（双语，暖色系美化） ----------------------
 st.markdown("<h3 style='text-align: center; color: #d48b6b;'>🌟 下次我们一起阅读更多有趣的故事吧！ | Let's read more interesting stories next time!</h3>", unsafe_allow_html=True)
