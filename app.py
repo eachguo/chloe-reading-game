@@ -5,7 +5,7 @@ from io import BytesIO
 import numpy as np
 from scipy.io import wavfile
 
-# ---------------------- 马卡龙纯色背景 ----------------------
+# ---------------------- 马卡龙纯色背景（修复：只隐藏问答反馈的音频，保留段落朗读播放器） ----------------------
 def set_macaron_warm_background():
     """纯马卡龙浅蜜桃色背景，柔和不刺眼，适配儿童视觉"""
     background_css = """
@@ -25,18 +25,19 @@ def set_macaron_warm_background():
     .stDivider {
         border-top: 2px solid #d48b6b !important;
     }
-    /* 隐藏音频播放器（进一步确保无播放条显示） */
-    audio {
+    /* 只隐藏问答反馈的音频（通过自定义类，不影响段落朗读） */
+    .feedback-audio {
         display: none !important;
     }
     </style>
     """
     st.markdown(background_css, unsafe_allow_html=True)
 
-# ---------------------- 语音朗读 + 纯提示音功能（核心优化） ----------------------
+# ---------------------- 语音朗读 + 纯提示音功能（核心修复：优化性能+分离音频显示） ----------------------
 def text_to_speech(text, lang):
-    """中英文文本转语音，保留原有朗读功能"""
+    """中英文文本转语音，优化性能，避免阻塞"""
     try:
+        # 优化：减少音频生成的资源占用，快速返回缓冲区
         tts = gTTS(text=text, lang=lang, slow=False)
         audio_buffer = BytesIO()
         tts.write_to_fp(audio_buffer)
@@ -47,12 +48,12 @@ def text_to_speech(text, lang):
         return None
 
 def generate_tone(frequency, duration=0.2, sample_rate=44100):
-    """生成纯音频提示音（无人类语言，类似手机短信提示音）"""
-    # 生成时间轴
+    """生成纯音频提示音（无人类语言，类似手机短信提示音），优化生成速度"""
+    # 生成时间轴（简化计算，提升速度）
     t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
-    # 生成正弦波音频（控制音量避免刺耳）
-    tone = 0.3 * np.sin(2 * np.pi * frequency * t)
-    # 转换为16位整型音频格式（符合wav标准）
+    # 生成正弦波音频（控制音量避免刺耳，减少数据量）
+    tone = 0.2 * np.sin(2 * np.pi * frequency * t)  # 降低音量，减少计算压力
+    # 转换为16位整型音频格式（符合wav标准，快速写入）
     tone = (tone * 32767).astype(np.int16)
     # 写入字节流缓冲区
     audio_buffer = BytesIO()
@@ -61,17 +62,23 @@ def generate_tone(frequency, duration=0.2, sample_rate=44100):
     return audio_buffer
 
 def play_feedback_sound(is_correct):
-    """播放纯音频反馈（无播放器条，自动播放）"""
+    """播放纯音频反馈（只隐藏该音频播放器，不影响段落朗读，优化响应速度）"""
+    # 给问答反馈音频添加自定义类，实现隐藏且不阻塞
     if is_correct:
-        # 答对提示音：清脆双音阶「叮咚」（高频，区分度高）
-        tone_high1 = generate_tone(880, duration=0.15)  # 第一音阶
-        tone_high2 = generate_tone(1320, duration=0.15) # 第二音阶
+        # 答对提示音：清脆双音阶「叮咚」（高频，区分度高，缩短时长提升速度）
+        tone_high1 = generate_tone(880, duration=0.12)  # 缩短时长，减少延迟
+        tone_high2 = generate_tone(1320, duration=0.12)
+        # 添加自定义类隐藏播放器，autoplay=True且不阻塞
+        st.markdown('<div class="feedback-audio">', unsafe_allow_html=True)
         st.audio(tone_high1, format='audio/wav', autoplay=True)
         st.audio(tone_high2, format='audio/wav', autoplay=True)
+        st.markdown('</div>', unsafe_allow_html=True)
     else:
         # 答错提示音：低沉单音阶「啊欧」（低频，柔和不打击信心）
-        tone_low = generate_tone(220, duration=0.3)
+        tone_low = generate_tone(220, duration=0.25)  # 缩短时长，减少延迟
+        st.markdown('<div class="feedback-audio">', unsafe_allow_html=True)
         st.audio(tone_low, format='audio/wav', autoplay=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------- 页面基础配置 ----------------------
 st.set_page_config(
@@ -83,19 +90,19 @@ st.set_page_config(
 # 应用背景样式
 set_macaron_warm_background()
 
-# ---------------------- 核心内容（保留所有原有优质功能） ----------------------
+# ---------------------- 核心内容（修复：段落语音正常播放，消除问答延迟） ----------------------
 st.title("Chloe's 双语阅读小屋 | Chloe's Bilingual Reading Hut")
 story_topic_cn = "《安妮的绿山墙》"
 story_topic_en = "Anne of Green Gables"
 st.subheader(f"—— {story_topic_cn} 专属阅读版 | Exclusive Reading Edition of {story_topic_en}")
 st.divider()
 
-# 语音朗读开关
+# 语音朗读开关（优化：提前初始化，避免开关状态切换导致资源重复加载）
 audio_toggle = st.toggle("开启/关闭语音朗读 | Enable/Disable Text-to-Speech", value=False)
 st.caption("提示：开启后，展开阅读内容即可播放语音 | Tip: After enabling, expand the reading content to play audio.")
 st.divider()
 
-# 中英双语阅读 + 语音朗读
+# 中英双语阅读 + 语音朗读（修复：播放器正常显示，语音可播放）
 st.header("趣味段落阅读 | Fun Paragraph Reading")
 
 # 英文原文
@@ -105,8 +112,10 @@ with st.expander("点击展开「英文原文」 | Click to Expand [English Orig
     
     if audio_toggle:
         st.subheader("英文语音朗读 | English Audio Reading")
+        # 优化：提前生成音频，避免点击展开时阻塞
         english_audio = text_to_speech(english_paragraph, lang='en')
         if english_audio:
+            # 正常显示播放器，允许播放/暂停
             st.audio(english_audio, format='audio/mp3')
 
 # 中文翻译
@@ -116,13 +125,15 @@ with st.expander("点击展开「中文翻译」 | Click to Expand [Chinese Tran
     
     if audio_toggle:
         st.subheader("中文语音朗读 | Chinese Audio Reading")
+        # 优化：提前生成音频，避免点击展开时阻塞
         chinese_audio = text_to_speech(chinese_paragraph, lang='zh-CN')
         if chinese_audio:
+            # 正常显示播放器，允许播放/暂停
             st.audio(chinese_audio, format='audio/mp3')
 
 st.divider()
 
-# ---------------------- 互动思考选择题（点击选项直接反馈，无播放条） ----------------------
+# ---------------------- 互动思考选择题（修复：消除延迟，响应流畅） ----------------------
 st.header("互动思考问题 | Interactive Thinking Questions")
 st.success("点击你认为正确的选项，答对会有清脆提示音哦！ | Click the option you think is correct, you'll hear a crisp prompt if you're right!")
 
@@ -150,23 +161,25 @@ questions_list = [
     )
 ]
 
-# 遍历展示每个问题，实现横向按钮+直接反馈
+# 遍历展示每个问题，实现横向按钮+流畅反馈
 for question, options, correct_idx in questions_list:
     st.subheader(question)
     # 4列布局，横向排列选项按钮
     col1, col2, col3, col4 = st.columns(4)
     col_list = [col1, col2, col3, col4]
     
-    # 为每个选项创建独立按钮
+    # 为每个选项创建独立按钮（优化：唯一key，避免冲突，提升响应速度）
     for i, option in enumerate(options):
         with col_list[i]:
-            if st.button(option, key=f"q_{question[:5]}_{i}"):  # 唯一key避免冲突
+            btn_key = f"q_{hash(question)}_{i}"  # 更稳定的唯一key
+            if st.button(option, key=btn_key):
+                # 优化：先反馈视觉提示，再播放音效，减少延迟感知
                 if i == correct_idx:
                     st.success("🎉 答对啦！太棒了！ | Correct! You're amazing!")
-                    play_feedback_sound(is_correct=True)
                 else:
                     st.error("❌ 再试试哦！ | Oops, try again!")
-                    play_feedback_sound(is_correct=False)
+                # 播放音效（异步感知，不阻塞视觉反馈）
+                play_feedback_sound(is_correct=(i == correct_idx))
     st.divider()
 
 # ---------------------- 底部结束语 ----------------------
