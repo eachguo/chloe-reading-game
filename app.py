@@ -3,6 +3,7 @@ import streamlit as st
 from io import BytesIO
 import numpy as np
 from scipy.io import wavfile
+import hashlib
 
 # ---------------------- 马卡龙纯色背景（儿童友好，柔和不刺眼） ----------------------
 def set_macaron_warm_background():
@@ -133,14 +134,15 @@ questions_list = [
 ]
 
 # 遍历展示问题，横向按钮更易点击
-for question, options, correct_idx in questions_list:
+for q_idx, (question, options, correct_idx) in enumerate(questions_list):
     st.subheader(question)
     col1, col2, col3, col4 = st.columns(4)
     col_list = [col1, col2, col3, col4]
     
     for i, option in enumerate(options):
         with col_list[i]:
-            btn_key = f"anne_question_{i}_{correct_idx}"
+            # 生成全局唯一的key，彻底解决重复key报错
+            btn_key = f"q_{q_idx}_opt_{i}_{hash(question + option)}"
             if st.button(option, key=btn_key, use_container_width=True):
                 # 先视觉反馈，再音效，零延迟感知
                 if i == correct_idx:
