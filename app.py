@@ -2,9 +2,12 @@
 import streamlit as st
 from gtts import gTTS
 from io import BytesIO
+import numpy as np
+from scipy.io import wavfile
 
 # ---------------------- 马卡龙纯色背景 ----------------------
 def set_macaron_warm_background():
+    """纯马卡龙浅蜜桃色背景，柔和不刺眼，适配儿童视觉"""
     background_css = """
     <style>
     .stApp {
@@ -22,12 +25,17 @@ def set_macaron_warm_background():
     .stDivider {
         border-top: 2px solid #d48b6b !important;
     }
+    /* 隐藏音频播放器（进一步确保无播放条显示） */
+    audio {
+        display: none !important;
+    }
     </style>
     """
     st.markdown(background_css, unsafe_allow_html=True)
 
-# ---------------------- 语音朗读 + 答题音效功能 ----------------------
+# ---------------------- 语音朗读 + 纯提示音功能（核心优化） ----------------------
 def text_to_speech(text, lang):
+    """中英文文本转语音，保留原有朗读功能"""
     try:
         tts = gTTS(text=text, lang=lang, slow=False)
         audio_buffer = BytesIO()
@@ -38,18 +46,32 @@ def text_to_speech(text, lang):
         st.warning(f"⚠️ 语音生成失败：{str(e)} | Speech generation failed: {str(e)}")
         return None
 
-def play_sound(sound_type):
-    # 直接生成不同的音效反馈
+def generate_tone(frequency, duration=0.2, sample_rate=44100):
+    """生成纯音频提示音（无人类语言，类似手机短信提示音）"""
+    # 生成时间轴
+    t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
+    # 生成正弦波音频（控制音量避免刺耳）
+    tone = 0.3 * np.sin(2 * np.pi * frequency * t)
+    # 转换为16位整型音频格式（符合wav标准）
+    tone = (tone * 32767).astype(np.int16)
+    # 写入字节流缓冲区
     audio_buffer = BytesIO()
-    if sound_type == "correct":
-        # 答对音效：叮咚
-        tts = gTTS(text="叮咚", lang='zh-CN', slow=False)
-    else:
-        # 答错音效：啊欧
-        tts = gTTS(text="啊欧", lang='zh-CN', slow=False)
-    tts.write_to_fp(audio_buffer)
+    wavfile.write(audio_buffer, sample_rate, tone)
     audio_buffer.seek(0)
-    st.audio(audio_buffer, format='audio/mp3', autoplay=True)
+    return audio_buffer
+
+def play_feedback_sound(is_correct):
+    """播放纯音频反馈（无播放器条，自动播放）"""
+    if is_correct:
+        # 答对提示音：清脆双音阶「叮咚」（高频，区分度高）
+        tone_high1 = generate_tone(880, duration=0.15)  # 第一音阶
+        tone_high2 = generate_tone(1320, duration=0.15) # 第二音阶
+        st.audio(tone_high1, format='audio/wav', autoplay=True)
+        st.audio(tone_high2, format='audio/wav', autoplay=True)
+    else:
+        # 答错提示音：低沉单音阶「啊欧」（低频，柔和不打击信心）
+        tone_low = generate_tone(220, duration=0.3)
+        st.audio(tone_low, format='audio/wav', autoplay=True)
 
 # ---------------------- 页面基础配置 ----------------------
 st.set_page_config(
@@ -58,9 +80,10 @@ st.set_page_config(
     layout="centered"
 )
 
+# 应用背景样式
 set_macaron_warm_background()
 
-# ---------------------- 核心内容 ----------------------
+# ---------------------- 核心内容（保留所有原有优质功能） ----------------------
 st.title("Chloe's 双语阅读小屋 | Chloe's Bilingual Reading Hut")
 story_topic_cn = "《安妮的绿山墙》"
 story_topic_en = "Anne of Green Gables"
@@ -99,48 +122,51 @@ with st.expander("点击展开「中文翻译」 | Click to Expand [Chinese Tran
 
 st.divider()
 
-# ---------------------- 互动思考选择题（点击选项直接反馈） ----------------------
+# ---------------------- 互动思考选择题（点击选项直接反馈，无播放条） ----------------------
 st.header("互动思考问题 | Interactive Thinking Questions")
-st.success("点击你认为正确的选项，答对会有叮咚声哦！ | Click the option you think is correct, you'll hear a 'ding-dong' if you're right!")
+st.success("点击你认为正确的选项，答对会有清脆提示音哦！ | Click the option you think is correct, you'll hear a crisp prompt if you're right!")
 
-# 定义问题和选项
+# 定义问题和选项（格式：(问题, 选项列表, 正确答案索引)）
 questions_list = [
     (
         "1. What did the Cuthberts want at first? （卡斯伯特兄妹一开始想要什么？）",
         ["A. A girl (一个女孩)", "B. A boy (一个男孩)", "C. A dog (一只小狗)", "D. A cat (一只小猫)"],
-        1  # 正确选项是B
+        1  # 正确选项：B
     ),
     (
         "2. What color is Anne's hair? （安妮的头发是什么颜色的？）",
         ["A. Black (黑色)", "B. Brown (棕色)", "C. Red (红色)", "D. Blonde (金色)"],
-        2  # 正确选项是C
+        2  # 正确选项：C
     ),
     (
         "3. What did Anne call the cherry tree? （安妮把樱桃树称作什么？）",
         ["A. Snow Queen (白雪女王)", "B. Silver Thread (银线)", "C. Magic Tree (魔法树)", "D. Home Tree (家园树)"],
-        0  # 正确选项是A
+        0  # 正确选项：A
     ),
     (
         "4. What was Anne's dream? （安妮的梦想是什么？）",
         ["A. To travel around the world (环游世界)", "B. To have a real home (拥有一个真正的家)", "C. To be a teacher (成为一名老师)", "D. To be a doctor (成为一名医生)"],
-        1  # 正确选项是B
+        1  # 正确选项：B
     )
 ]
 
-# 遍历展示每个问题
+# 遍历展示每个问题，实现横向按钮+直接反馈
 for question, options, correct_idx in questions_list:
     st.subheader(question)
+    # 4列布局，横向排列选项按钮
     col1, col2, col3, col4 = st.columns(4)
-    # 每个选项做成一个按钮
+    col_list = [col1, col2, col3, col4]
+    
+    # 为每个选项创建独立按钮
     for i, option in enumerate(options):
-        with [col1, col2, col3, col4][i]:
-            if st.button(option, key=f"{question}_{i}"):
+        with col_list[i]:
+            if st.button(option, key=f"q_{question[:5]}_{i}"):  # 唯一key避免冲突
                 if i == correct_idx:
                     st.success("🎉 答对啦！太棒了！ | Correct! You're amazing!")
-                    play_sound("correct")
+                    play_feedback_sound(is_correct=True)
                 else:
-                    st.error("❌ 啊欧，再试试！ | Oops, try again!")
-                    play_sound("wrong")
+                    st.error("❌ 再试试哦！ | Oops, try again!")
+                    play_feedback_sound(is_correct=False)
     st.divider()
 
 # ---------------------- 底部结束语 ----------------------
