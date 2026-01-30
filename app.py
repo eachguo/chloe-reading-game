@@ -88,8 +88,9 @@ st.header("趣味段落阅读 | Fun Paragraph Reading")
 st.subheader("📖 英文原文 | English Original")
 english_paragraph = """Anne Shirley was not what the Cuthberts had expected. They had sent for a boy to help them with the farm work, but instead, a thin, red-haired girl with big eyes stood before them. She talked and talked, telling them about her life in the orphanage and her dreams of having a real home. Anne loved to imagine things—she called the cherry tree outside her window a "snow queen" and the brook a "silver thread". For her, the world was full of magic and beauty, even when life was hard. She hoped that the Cuthberts would keep her and that she would finally have a place to call home."""
 st.write(english_paragraph)
-# 英文语音播放条（调用变量，无长URL报错）
-st.audio(ENGLISH_AUDIO_URL, format="audio/mp3", label="🔊 英文语音朗读 | English Audio")
+# 英文语音播放条（修复：去掉label参数中的Emoji和特殊字符）
+st.audio(ENGLISH_AUDIO_URL, format="audio/mp3")
+st.caption("英文语音朗读 | English Audio")
 
 st.divider()
 
@@ -97,8 +98,9 @@ st.divider()
 st.subheader("📖 中文翻译 | Chinese Translation")
 chinese_paragraph = """安妮·雪莉并不是卡斯伯特兄妹所期待的那样。他们本来申请了一个男孩来帮忙打理农场的活计，可站在他们面前的，却是一个瘦小、红头发、有着一双大眼睛的女孩。她滔滔不绝地说着，跟他们讲述自己在孤儿院的生活，以及拥有一个真正家的梦想。安妮喜欢幻想——她把窗外的樱桃树称作“白雪女王”，把小溪称作“银线”。对她来说，即便生活艰难，这个世界也依然充满了魔法与美好。她希望卡斯伯特兄妹能留下她，希望自己终于能有一个可以称之为“家”的地方。"""
 st.write(chinese_paragraph)
-# 中文语音播放条（调用变量，无长URL报错）
-st.audio(CHINESE_AUDIO_URL, format="audio/mp3", label="🔊 中文语音朗读 | Chinese Audio")
+# 中文语音播放条（修复：去掉label参数中的Emoji和特殊字符）
+st.audio(CHINESE_AUDIO_URL, format="audio/mp3")
+st.caption("中文语音朗读 | Chinese Audio")
 
 st.divider()
 
