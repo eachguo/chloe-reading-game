@@ -83,7 +83,7 @@ with st.expander("点击展开「英文原文」 | Click to Expand [English Orig
         st.subheader("英文语音朗读 | English Audio Reading")
         english_audio = text_to_speech(english_paragraph, lang='en')
         if english_audio:
-            st.audio(english_audio, format='audio/mp3', label="English Passage Audio")
+            st.audio(english_audio, format='audio/mp3')
 
 # 中文翻译 + 语音朗读
 with st.expander("点击展开「中文翻译」 | Click to Expand [Chinese Translation]", expanded=True):
@@ -95,7 +95,7 @@ with st.expander("点击展开「中文翻译」 | Click to Expand [Chinese Tran
         st.subheader("中文语音朗读 | Chinese Audio Reading")
         chinese_audio = text_to_speech(chinese_paragraph, lang='zh-CN')
         if chinese_audio:
-            st.audio(chinese_audio, format='audio/mp3', label="Chinese Passage Audio")
+            st.audio(chinese_audio, format='audio/mp3')
 
 st.divider()
 
