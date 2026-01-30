@@ -1,6 +1,5 @@
 # 导入必备库（仅保留核心依赖，无冗余，确保兼容）
 import streamlit as st
-from streamlit_drawable_canvas import st_canvas
 
 # ---------------------- 马卡龙纯色背景（极简兼容，无图片，绝对不空白） ----------------------
 def set_macaron_warm_background():
@@ -39,7 +38,7 @@ st.set_page_config(
 # 调用背景函数（仅添加安全样式，不影响核心功能）
 set_macaron_warm_background()
 
-# ---------------------- 核心功能：完整双语内容 + 新手友好单词配对 ----------------------
+# ---------------------- 核心功能：完整双语内容 + 优化版单词配对（无画布，有悬念） ----------------------
 st.title("Chloe's 双语阅读小屋 | Chloe's Bilingual Reading Hut")
 story_topic_cn = "《安妮的绿山墙》"
 story_topic_en = "Anne of Green Gables"
@@ -71,11 +70,11 @@ for q in questions:
 
 st.divider()
 
-# ---------------------- 单词配对小游戏（新手友好版：手绘连线+手动输入+对错判断） ----------------------
+# ---------------------- 单词配对小游戏（最终优化版：无画布，有悬念） ----------------------
 st.header("单词配对小游戏 | Word Matching Game")
-st.success("游戏规则：1. 对着下方单词在画布手绘连线；2. 输入你的答案（格式示例：1B,2A,3D,4C）；3. 提交查看对错")
+st.success("游戏规则：根据阅读内容，将英文单词与对应的中文释义配对，输入答案提交即可")
 
-# 第一步：展示单词列表（左右对齐，对应画布视觉关联）
+# 第一步：展示单词列表（左右对齐）
 st.write("### 单词对应列表")
 col1, col2 = st.columns(2)
 with col1:
@@ -91,55 +90,29 @@ with col2:
     st.write("C. 樱桃树")
     st.write("D. 梦想")
 
-# 第二步：手绘画布（加宽，方便对应两侧单词，保留暖色系风格）
-st.write("### 请在下方画布手绘连线配对")
-canvas_result = st_canvas(
-    fill_color="rgba(255,255,255,0)",  # 透明填充，只保留手绘线条
-    stroke_width=3,
-    stroke_color="#d48b6b",  # 马卡龙暖橘色线条，呼应整体风格
-    background_color="#fdf6f0",  # 浅于主背景，清晰可见
-    height=300,  # 高度足够，方便绘制多条连线
-    width=700,  # 加宽画布，对应两侧单词的间距
-    drawing_mode="freedraw",
-    key="canvas",
-)
-
-# 第三步：手动输入答案（输入框，给出明确格式提示）
+# 第二步：手动输入答案（输入框，给出明确格式提示）
 user_answer = st.text_input(
     label="请输入你的配对答案（严格按照格式：1B,2A,3D,4C）",
     placeholder="例如：1B,2A,3D,4C",
     help="请不要修改格式，直接替换对应字母即可"
 )
 
-# 第四步：提交答案+对错判断（闭环逻辑，友好反馈）
-if st.button("提交答案并查看正确结果 | Submit Answer and Check Correct Results"):
+# 第三步：提交答案+有悬念的反馈（不再直接显示完整答案）
+if st.button("提交答案并查看结果 | Submit Answer and Check Results"):
     # 预设正确答案（固定格式，与输入框对应）
     correct_answer = "1B,2A,3D,4C"
-    # 详细配对结果，方便展示
-    correct_pair_detail = {
-        "1. orphanage": "B. 孤儿院",
-        "2. farm": "A. 农场",
-        "3. dream": "D. 梦想",
-        "4. cherry tree": "C. 樱桃树"
-    }
     
-    # 第一步：展示完整正确答案
-    st.write("### 📌 完整正确配对答案")
-    for word, meaning in correct_pair_detail.items():
-        st.write(f"{word} → {meaning}")
-    
-    # 第二步：简单判断对错（忽略空格、大小写，提升用户体验）
     # 清理用户输入和正确答案（去除空格，转为大写，避免格式小误差导致误判）
     user_answer_clean = user_answer.replace(" ", "").upper()
     correct_answer_clean = correct_answer.replace(" ", "").upper()
     
-    # 分情况反馈
+    # 有悬念的反馈逻辑
     if user_answer == "":
         st.warning("⚠️ 请先在输入框中输入你的答案哦！")
     elif user_answer_clean == correct_answer_clean:
         st.success("🎉 太棒了！全部答对了，你太优秀了！")
     else:
-        st.error("❌ 答案有误，再对照正确答案仔细核对一下吧！")
+        st.error("❌ 答案有误，请再仔细阅读文章，重新思考一下吧！")
 
 st.divider()
 
