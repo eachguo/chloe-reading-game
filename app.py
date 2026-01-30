@@ -5,13 +5,12 @@ from io import BytesIO
 
 # ---------------------- 马卡龙纯色背景 ----------------------
 def set_macaron_warm_background():
-    """纯马卡龙浅蜜桃色背景，柔和不刺眼"""
     background_css = """
     <style>
     .stApp {
         background-color: #fff3e6 !important;
     }
-    .stExpander, .stHeader, .stSuccess, .stButton > button, .stTextInput > div > div, .stToggle > div, .stRadio > div {
+    .stExpander, .stHeader, .stSuccess, .stButton > button, .stTextInput > div > div, .stToggle > div {
         background-color: rgba(255, 255, 255, 0.95) !important;
         border-radius: 8px !important;
         padding: 10px !important;
@@ -29,7 +28,6 @@ def set_macaron_warm_background():
 
 # ---------------------- 语音朗读 + 答题音效功能 ----------------------
 def text_to_speech(text, lang):
-    """文本转语音（中英文）"""
     try:
         tts = gTTS(text=text, lang=lang, slow=False)
         audio_buffer = BytesIO()
@@ -40,23 +38,18 @@ def text_to_speech(text, lang):
         st.warning(f"⚠️ 语音生成失败：{str(e)} | Speech generation failed: {str(e)}")
         return None
 
-def play_feedback_audio(is_correct):
-    """播放答题反馈音效（答对高兴/答错沉闷）"""
-    # 简化版内置音效（通过BytesIO生成轻量音频，无需外部文件）
-    try:
-        audio_buffer = BytesIO()
-        if is_correct:
-            # 答对高兴音效（短音高）
-            tts = gTTS(text="✌️", lang='en', slow=False)
-        else:
-            # 答错沉闷音效（短音低）
-            tts = gTTS(text="😔", lang='en', slow=False)
-        tts.write_to_fp(audio_buffer)
-        audio_buffer.seek(0)
-        st.audio(audio_buffer, format='audio/mp3', autoplay=True)
-    except Exception as e:
-        # 音效生成失败不影响核心功能
-        pass
+def play_sound(sound_type):
+    # 直接生成不同的音效反馈
+    audio_buffer = BytesIO()
+    if sound_type == "correct":
+        # 答对音效：叮咚
+        tts = gTTS(text="叮咚", lang='zh-CN', slow=False)
+    else:
+        # 答错音效：啊欧
+        tts = gTTS(text="啊欧", lang='zh-CN', slow=False)
+    tts.write_to_fp(audio_buffer)
+    audio_buffer.seek(0)
+    st.audio(audio_buffer, format='audio/mp3', autoplay=True)
 
 # ---------------------- 页面基础配置 ----------------------
 st.set_page_config(
@@ -106,49 +99,48 @@ with st.expander("点击展开「中文翻译」 | Click to Expand [Chinese Tran
 
 st.divider()
 
-# ---------------------- 互动思考选择题（核心修改） ----------------------
+# ---------------------- 互动思考选择题（点击选项直接反馈） ----------------------
 st.header("互动思考问题 | Interactive Thinking Questions")
-st.success("请选择每个问题的正确答案，答对会有惊喜音效哦！ | Please choose the correct answer for each question, there will be a surprise sound if you get it right!")
+st.success("点击你认为正确的选项，答对会有叮咚声哦！ | Click the option you think is correct, you'll hear a 'ding-dong' if you're right!")
 
-# 定义问题和选项（格式：(问题, 选项列表, 正确答案索引)）
+# 定义问题和选项
 questions_list = [
     (
         "1. What did the Cuthberts want at first? （卡斯伯特兄妹一开始想要什么？）",
         ["A. A girl (一个女孩)", "B. A boy (一个男孩)", "C. A dog (一只小狗)", "D. A cat (一只小猫)"],
-        1
+        1  # 正确选项是B
     ),
     (
         "2. What color is Anne's hair? （安妮的头发是什么颜色的？）",
         ["A. Black (黑色)", "B. Brown (棕色)", "C. Red (红色)", "D. Blonde (金色)"],
-        2
+        2  # 正确选项是C
     ),
     (
         "3. What did Anne call the cherry tree? （安妮把樱桃树称作什么？）",
         ["A. Snow Queen (白雪女王)", "B. Silver Thread (银线)", "C. Magic Tree (魔法树)", "D. Home Tree (家园树)"],
-        0
+        0  # 正确选项是A
     ),
     (
         "4. What was Anne's dream? （安妮的梦想是什么？）",
         ["A. To travel around the world (环游世界)", "B. To have a real home (拥有一个真正的家)", "C. To be a teacher (成为一名老师)", "D. To be a doctor (成为一名医生)"],
-        1
+        1  # 正确选项是B
     )
 ]
 
-# 遍历展示每个问题，实现互动选择和音效反馈
+# 遍历展示每个问题
 for question, options, correct_idx in questions_list:
     st.subheader(question)
-    # 单选按钮选择答案
-    user_choice = st.radio("请选择答案 | Please choose an answer", options, key=question, horizontal=True)
-    # 提交按钮（每个问题独立提交，提升互动性）
-    if st.button(f"提交第{question[0]}题答案 | Submit Answer for Question {question[0]}", key=f"btn_{question[0]}"):
-        # 判断是否答对
-        user_idx = options.index(user_choice)
-        if user_idx == correct_idx:
-            st.success("🎉 答对啦！太棒了！ | Correct! You're amazing!")
-            play_feedback_audio(is_correct=True)
-        else:
-            st.error("❌ 答错啦，再仔细看看文章哦！ | Incorrect, please read the passage again carefully!")
-            play_feedback_audio(is_correct=False)
+    col1, col2, col3, col4 = st.columns(4)
+    # 每个选项做成一个按钮
+    for i, option in enumerate(options):
+        with [col1, col2, col3, col4][i]:
+            if st.button(option, key=f"{question}_{i}"):
+                if i == correct_idx:
+                    st.success("🎉 答对啦！太棒了！ | Correct! You're amazing!")
+                    play_sound("correct")
+                else:
+                    st.error("❌ 啊欧，再试试！ | Oops, try again!")
+                    play_sound("wrong")
     st.divider()
 
 # ---------------------- 底部结束语 ----------------------
