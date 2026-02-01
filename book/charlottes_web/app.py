@@ -2,7 +2,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 # --------------------------
-# 核心配置：隐藏侧边栏 + 儿童友好样式
+# 核心配置：完全对齐《安妮的绿山墙》
 # --------------------------
 st.set_page_config(page_title="夏洛的网 | 双语阅读小屋", layout="wide")
 st.markdown("""
@@ -12,9 +12,29 @@ st.markdown("""
         .stApp {background-color: #FFF5E1;}
         h1 {color: #E67E22; text-align: center; font-size: 32px !important;}
         h3 {color: #D35400;}
-        .stButton > button {background-color: #F39C12; color: white; font-size: 16px !important; border-radius: 8px; margin: 0 4px;}
+        h4 {color: #E67E22;}
+        .stButton > button {
+            background-color: #FFFFFF;
+            color: #D35400;
+            border: 1px solid #F39C12;
+            font-size: 16px !important;
+            border-radius: 8px;
+            margin: 0 4px;
+            padding: 6px 12px;
+        }
+        .stButton > button:hover {
+            background-color: #FFF9E8;
+        }
         .hidden-audio {display: none !important;}
         .quiz-section {margin: 20px 0; padding: 15px; border-radius: 10px; background-color: #FFF9E8;}
+        .end-note {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            border-top: 1px solid #F39C12;
+            color: #D35400;
+            font-size: 18px;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -26,18 +46,20 @@ chinese_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-gam
 correct_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-game/main/Audio/correct.mp3"
 wrong_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-game/main/Audio/wrong.mp3"
 
-# 嵌入稳定的音频播放器
+# 嵌入和《安妮的绿山墙》完全一致的音频播放器
 components.html(f"""
-    <audio id="correct-audio" src="{correct_audio_url}" class="hidden-audio">
-    <audio id="wrong-audio" src="{wrong_audio_url}" class="hidden-audio">
+    <audio id="correct-audio" src="{correct_audio_url}" preload="auto">
+    <audio id="wrong-audio" src="{wrong_audio_url}" preload="auto">
     <script>
         function playCorrect() {{
-            document.getElementById('correct-audio').currentTime = 0;
-            document.getElementById('correct-audio').play();
+            const audio = document.getElementById('correct-audio');
+            audio.currentTime = 0;
+            audio.play().catch(e => console.log('播放失败:', e));
         }}
         function playWrong() {{
-            document.getElementById('wrong-audio').currentTime = 0;
-            document.getElementById('wrong-audio').play();
+            const audio = document.getElementById('wrong-audio');
+            audio.currentTime = 0;
+            audio.play().catch(e => console.log('播放失败:', e));
         }}
     </script>
 """, height=0)
@@ -72,7 +94,7 @@ with st.container():
         ["A. 开心又兴奋 / Happy and excited", "B. 孤单又害怕 / Lonely and scared", "C. 愤怒又暴躁 / Angry and grumpy", "D. 平静又淡然 / Calm and indifferent"],
         horizontal=True,
         key="q1",
-        index=None  # 默认不选中
+        index=None
     )
     if q1 == "B. 孤单又害怕 / Lonely and scared":
         st.success("✅ 答对啦！太棒了！/ Correct! You're amazing!")
@@ -131,3 +153,12 @@ with st.container():
     elif q4 is not None and q4 != "A. 别害怕，我会救你的 / Don't worry, I will save you":
         st.error("❌ 再想想哦！/ Try again!")
         components.html("<script>playWrong()</script>", height=0)
+
+# --------------------------
+# 结尾文案：完全对齐《安妮的绿山墙》
+# --------------------------
+st.markdown("""
+    <div class="end-note">
+        ✨ 下次我们一起阅读更多有趣的故事吧！ | Let's read more interesting stories next time!
+    </div>
+""", unsafe_allow_html=True)
