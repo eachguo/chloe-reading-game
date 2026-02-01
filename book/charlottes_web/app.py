@@ -12,7 +12,14 @@ st.markdown("""
         h1 {color: #E67E22; text-align: center; font-size: 32px !important;}
         h3 {color: #D35400;}
         .stButton > button {background-color: #F39C12; color: white; font-size: 16px !important; border-radius: 8px; margin: 0 4px;}
-        .feedback-audio {display: none !important; visibility: hidden !important; height: 0px !important; width: 0px !important;}
+        /* 用key属性定位隐藏提示音播放器 */
+        [data-testid="stAudio"][key="correct_audio"],
+        [data-testid="stAudio"][key="wrong_audio"] {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0px !important;
+            width: 0px !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -41,9 +48,9 @@ st.caption("英文语音朗读")
 st.audio(chinese_audio_url, format="audio/mp3")
 st.caption("中文语音朗读")
 
-# 隐藏的反馈音频（答题提示音，无可见控件）
-st.audio(correct_audio_url, format="audio/mp3", loop=False, autoplay=False, key="correct_audio", css_class="feedback-audio")
-st.audio(wrong_audio_url, format="audio/mp3", loop=False, autoplay=False, key="wrong_audio", css_class="feedback-audio")
+# 隐藏的反馈音频（答题提示音，通过CSS隐藏）
+st.audio(correct_audio_url, format="audio/mp3", loop=False, autoplay=False, key="correct_audio")
+st.audio(wrong_audio_url, format="audio/mp3", loop=False, autoplay=False, key="wrong_audio")
 
 # --------------------------
 # 互动选择题（匹配扩充版段落，全局唯一key）
@@ -59,10 +66,10 @@ q1 = st.radio(
 )
 if q1 == "B. 孤单又害怕":
     st.success("✅ 答对啦！")
-    st.markdown(f'<audio src="{correct_audio_url}" autoplay class="feedback-audio">', unsafe_allow_html=True)
+    st.markdown(f'<audio src="{correct_audio_url}" autoplay>', unsafe_allow_html=True)
 elif q1 != "":
     st.error("❌ 再想想哦")
-    st.markdown(f'<audio src="{wrong_audio_url}" autoplay class="feedback-audio">', unsafe_allow_html=True)
+    st.markdown(f'<audio src="{wrong_audio_url}" autoplay>', unsafe_allow_html=True)
 
 # 题目2
 q2 = st.radio(
@@ -73,10 +80,10 @@ q2 = st.radio(
 )
 if q2 == "A. 谷仓门框的角落":
     st.success("✅ 答对啦！")
-    st.markdown(f'<audio src="{correct_audio_url}" autoplay class="feedback-audio">', unsafe_allow_html=True)
+    st.markdown(f'<audio src="{correct_audio_url}" autoplay>', unsafe_allow_html=True)
 elif q2 != "":
     st.error("❌ 再想想哦")
-    st.markdown(f'<audio src="{wrong_audio_url}" autoplay class="feedback-audio">', unsafe_allow_html=True)
+    st.markdown(f'<audio src="{wrong_audio_url}" autoplay>', unsafe_allow_html=True)
 
 # 题目3
 q3 = st.radio(
@@ -87,10 +94,10 @@ q3 = st.radio(
 )
 if q3 == "C. 圣诞节":
     st.success("✅ 答对啦！")
-    st.markdown(f'<audio src="{correct_audio_url}" autoplay class="feedback-audio">', unsafe_allow_html=True)
+    st.markdown(f'<audio src="{correct_audio_url}" autoplay>', unsafe_allow_html=True)
 elif q3 != "":
     st.error("❌ 再想想哦")
-    st.markdown(f'<audio src="{wrong_audio_url}" autoplay class="feedback-audio">', unsafe_allow_html=True)
+    st.markdown(f'<audio src="{wrong_audio_url}" autoplay>', unsafe_allow_html=True)
 
 # 题目4
 q4 = st.radio(
@@ -101,7 +108,7 @@ q4 = st.radio(
 )
 if q4 == "A. 别害怕，我会救你的":
     st.success("✅ 答对啦！")
-    st.markdown(f'<audio src="{correct_audio_url}" autoplay class="feedback-audio">', unsafe_allow_html=True)
+    st.markdown(f'<audio src="{correct_audio_url}" autoplay>', unsafe_allow_html=True)
 elif q4 != "":
     st.error("❌ 再想想哦")
-    st.markdown(f'<audio src="{wrong_audio_url}" autoplay class="feedback-audio">', unsafe_allow_html=True)
+    st.markdown(f'<audio src="{wrong_audio_url}" autoplay>', unsafe_allow_html=True)
