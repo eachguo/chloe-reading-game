@@ -63,41 +63,46 @@ st.markdown("""
             color: #5D4037;
             font-size: 19px !important;
         }
-        /* 隐藏纯HTML预加载音频播放器 */
-        .preload-audio {
-            display: none !important;
-            height: 0;
-            width: 0;
-        }
     </style>
 """, unsafe_allow_html=True)
 
 # --------------------------
-# 音频配置
+# 音频配置：只保留朗读音频（提示音用JS生成，无需外部文件）
 # --------------------------
 english_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-game/main/Audio/夏洛的网_english.mp3"
 chinese_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-game/main/Audio/夏洛的网_chinese.mp3"
-correct_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-game/main/Audio/correct.mp3"
-wrong_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-game/main/Audio/wrong.mp3"
 
 # --------------------------
-# 纯HTML预加载音频（解决Streamlit参数报错+浏览器拦截问题）
-# --------------------------
-components.html(f"""
-    <audio class="preload-audio" src="{correct_audio_url}" preload="auto">
-    <audio class="preload-audio" src="{wrong_audio_url}" preload="auto">
-""", height=0)
-
-# --------------------------
-# 核心：复用《安妮的绿山墙》稳定音频播放函数
+# 核心：复刻《安妮的绿山墙》—— JS生成系统单音（无外部音频依赖）
 # --------------------------
 def play_feedback_sound(is_correct):
-    sound_url = correct_audio_url if is_correct else wrong_audio_url
+    """
+    生成系统单音提示：正确=清脆高音（叮咚），错误=沉闷低音（咚）
+    :param is_correct: True=正确音，False=错误音
+    """
+    # 正确音：高音+短时长，错误音：低音+稍长时长
+    frequency = 880 if is_correct else 440  # 音频频率（越高声音越尖）
+    duration = 150 if is_correct else 200    # 播放时长（毫秒）
+    
     components.html(f"""
         <script>
-            const audio = new Audio("{sound_url}");
-            audio.currentTime = 0;
-            audio.play().catch(e => console.log("提示音播放日志（可忽略）:", e));
+            // Web Audio API 生成系统单音，无需外部文件
+            const context = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = context.createOscillator();
+            const gainNode = context.createGain();
+            
+            // 配置音频参数（和《安妮的绿山墙》一致）
+            oscillator.type = 'sine'; // 正弦波（柔和的单音，类似系统提示音）
+            oscillator.frequency.setValueAtTime({frequency}, context.currentTime);
+            gainNode.gain.setValueAtTime(0.1, context.currentTime); // 音量（避免过响）
+            
+            // 连接音频节点
+            oscillator.connect(gainNode);
+            gainNode.connect(context.destination);
+            
+            // 播放并停止（控制时长）
+            oscillator.start();
+            oscillator.stop(context.currentTime + {duration} / 1000);
         </script>
     """, height=0)
 
