@@ -10,13 +10,14 @@ st.markdown("""
         footer {visibility: hidden;}
         .stApp {background-color: #FFF5E1;}
         h1 {color: #E67E22; text-align: center; font-size: 32px !important;}
+        h3 {color: #D35400;}
         .stButton > button {background-color: #F39C12; color: white; font-size: 16px !important; border-radius: 8px; margin: 0 4px;}
         .feedback-audio {display: none !important; visibility: hidden !important; height: 0px !important; width: 0px !important;}
     </style>
 """, unsafe_allow_html=True)
 
 # --------------------------
-# 音频配置
+# 音频配置（已匹配你上传的音频文件名，无需修改）
 # --------------------------
 english_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-game/main/Audio/夏洛的网_english.mp3"
 chinese_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-game/main/Audio/夏洛的网_chinese.mp3"
@@ -24,14 +25,14 @@ correct_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-gam
 wrong_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-game/main/Audio/wrong.mp3"
 
 # --------------------------
-# 页面内容
+# 页面内容（扩充版中英文段落，故事性更强）
 # --------------------------
 st.title("夏洛的网 / Charlotte's Web")
 
-# 中英文段落
+# 中英文段落（扩充版）
 st.markdown("### 📖 经典段落")
-st.markdown("**中文**：在朱克曼家的谷仓里，快乐地生活着一群动物。小猪威尔伯和蜘蛛夏洛建立了最真挚的友谊。然而，一个坏消息打破了谷仓的平静：威尔伯未来的命运竟是成为熏肉火腿。")
-st.markdown("**English**：In the barn at Zuckerman's farm, a group of animals lived happily. Pig Wilbur and spider Charlotte formed the most sincere friendship. However, bad news broke the peace: Wilbur's future fate was to become bacon and ham.")
+st.markdown("**中文**：在朱克曼家的谷仓里，快乐地生活着一群动物。小猪威尔伯刚来到这里时，觉得孤单又害怕，直到它遇见了蜘蛛夏洛。夏洛就住在谷仓门框的角落，它用丝线织出漂亮的网，还会给威尔伯讲夜晚的故事。\n\n它们很快成了最好的朋友。然而，一个坏消息打破了谷仓的平静：农场主计划在圣诞节把威尔伯杀掉，做成熏肉火腿。威尔伯绝望地哭了起来，夏洛温柔地安慰它：“别害怕，我会救你的。”")
+st.markdown("**English**：In the barn at Zuckerman's farm, a group of animals lived happily. When Wilbur the pig first arrived, he felt lonely and scared—until he met Charlotte the spider. Charlotte lived in the corner of the barn doorframe, weaving beautiful webs with her silk and telling Wilbur stories of the night.\n\nThey soon became best friends. However, bad news shattered the barn's peace: the farmer planned to kill Wilbur at Christmas and turn him into bacon and ham. Wilbur cried in despair, but Charlotte comforted him gently: \"Don't worry, I will save you.\"")
 
 # 音频播放区
 st.markdown("### 🎧 语音朗读")
@@ -40,23 +41,23 @@ st.caption("英文语音朗读")
 st.audio(chinese_audio_url, format="audio/mp3")
 st.caption("中文语音朗读")
 
-# 隐藏的反馈音频（答题提示音）
+# 隐藏的反馈音频（答题提示音，无可见控件）
 st.audio(correct_audio_url, format="audio/mp3", loop=False, autoplay=False, key="correct_audio", css_class="feedback-audio")
 st.audio(wrong_audio_url, format="audio/mp3", loop=False, autoplay=False, key="wrong_audio", css_class="feedback-audio")
 
 # --------------------------
-# 互动选择题
+# 互动选择题（匹配扩充版段落，全局唯一key）
 # --------------------------
 st.markdown("### 🎯 小测试")
 
 # 题目1
 q1 = st.radio(
-    "1. 威尔伯和谁建立了真挚的友谊？",
-    ["A. 老鼠坦普尔顿", "B. 蜘蛛夏洛", "C. 小羊羔", "D. 鹅妈妈"],
+    "1. 小猪威尔伯刚到谷仓时，心情是怎样的？",
+    ["A. 开心又兴奋", "B. 孤单又害怕", "C. 愤怒又暴躁", "D. 平静又淡然"],
     horizontal=True,
     key="q1"
 )
-if q1 == "B. 蜘蛛夏洛":
+if q1 == "B. 孤单又害怕":
     st.success("✅ 答对啦！")
     st.markdown(f'<audio src="{correct_audio_url}" autoplay class="feedback-audio">', unsafe_allow_html=True)
 elif q1 != "":
@@ -65,12 +66,12 @@ elif q1 != "":
 
 # 题目2
 q2 = st.radio(
-    "2. 威尔伯的命运原本是什么？",
-    ["A. 成为宠物", "B. 参加比赛", "C. 成为熏肉火腿", "D. 被送走"],
+    "2. 夏洛住在谷仓的哪个位置？",
+    ["A. 谷仓门框的角落", "B. 干草堆上", "C. 猪栏旁边", "D. 窗户边"],
     horizontal=True,
     key="q2"
 )
-if q2 == "C. 成为熏肉火腿":
+if q2 == "A. 谷仓门框的角落":
     st.success("✅ 答对啦！")
     st.markdown(f'<audio src="{correct_audio_url}" autoplay class="feedback-audio">', unsafe_allow_html=True)
 elif q2 != "":
@@ -79,12 +80,12 @@ elif q2 != "":
 
 # 题目3
 q3 = st.radio(
-    "3. 故事发生在哪个地方？",
-    ["A. 森林里", "B. 朱克曼家的谷仓", "C. 农场主的房子", "D. 学校"],
+    "3. 农场主计划在什么时候杀掉威尔伯？",
+    ["A. 春节", "B. 国庆节", "C. 圣诞节", "D. 中秋节"],
     horizontal=True,
     key="q3"
 )
-if q3 == "B. 朱克曼家的谷仓":
+if q3 == "C. 圣诞节":
     st.success("✅ 答对啦！")
     st.markdown(f'<audio src="{correct_audio_url}" autoplay class="feedback-audio">', unsafe_allow_html=True)
 elif q3 != "":
@@ -93,12 +94,12 @@ elif q3 != "":
 
 # 题目4
 q4 = st.radio(
-    "4. 夏洛是什么动物？",
-    ["A. 小猪", "B. 老鼠", "C. 蜘蛛", "D. 鹅"],
+    "4. 夏洛对威尔伯说的安慰话是？",
+    ["A. 别害怕，我会救你的", "B. 别哭了，没人能帮你", "C. 勇敢点，接受命运吧", "D. 加油，你可以逃跑的"],
     horizontal=True,
     key="q4"
 )
-if q4 == "C. 蜘蛛":
+if q4 == "A. 别害怕，我会救你的":
     st.success("✅ 答对啦！")
     st.markdown(f'<audio src="{correct_audio_url}" autoplay class="feedback-audio">', unsafe_allow_html=True)
 elif q4 != "":
