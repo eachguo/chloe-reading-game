@@ -63,9 +63,8 @@ st.markdown("""
             color: #5D4037;
             font-size: 19px !important;
         }
-        /* 隐藏预加载音频播放器 */
-        [data-testid="stAudio"][key="preload_correct"],
-        [data-testid="stAudio"][key="preload_wrong"] {
+        /* 隐藏纯HTML预加载音频播放器 */
+        .preload-audio {
             display: none !important;
             height: 0;
             width: 0;
@@ -74,7 +73,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --------------------------
-# 音频配置：先定义变量，再使用（关键！解决NameError）
+# 音频配置
 # --------------------------
 english_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-game/main/Audio/夏洛的网_english.mp3"
 chinese_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-game/main/Audio/夏洛的网_chinese.mp3"
@@ -82,10 +81,12 @@ correct_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-gam
 wrong_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-game/main/Audio/wrong.mp3"
 
 # --------------------------
-# 预加载音频（现在变量已定义，不会报错）
+# 纯HTML预加载音频（解决Streamlit参数报错+浏览器拦截问题）
 # --------------------------
-st.audio(correct_audio_url, format="audio/mp3", loop=False, autoplay=False, key="preload_correct")
-st.audio(wrong_audio_url, format="audio/mp3", loop=False, autoplay=False, key="preload_wrong")
+components.html(f"""
+    <audio class="preload-audio" src="{correct_audio_url}" preload="auto">
+    <audio class="preload-audio" src="{wrong_audio_url}" preload="auto">
+""", height=0)
 
 # --------------------------
 # 核心：复用《安妮的绿山墙》稳定音频播放函数
