@@ -2,7 +2,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 # --------------------------
-# 核心配置：完全对齐《安妮的绿山墙》
+# 核心配置：100%对齐《安妮的绿山墙》
 # --------------------------
 st.set_page_config(page_title="夏洛的网 | 双语阅读小屋", layout="wide")
 st.markdown("""
@@ -10,17 +10,39 @@ st.markdown("""
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         .stApp {background-color: #FFF5E1;}
-        h1 {color: #E67E22; text-align: center; font-size: 32px !important;}
-        h3 {color: #D35400;}
-        h4 {color: #E67E22;}
+        h1 {
+            color: #E67E22; 
+            text-align: center; 
+            font-size: 36px !important;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        h3 {
+            color: #D35400;
+            font-size: 24px !important;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        h4 {
+            color: #E67E22;
+            font-size: 20px !important;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        p, .stMarkdown, .stRadio {
+            font-size: 18px !important;
+            color: #5D4037;
+            line-height: 1.6;
+        }
         .stButton > button {
             background-color: #FFFFFF;
             color: #D35400;
             border: 1px solid #F39C12;
-            font-size: 16px !important;
+            font-size: 18px !important;
             border-radius: 8px;
-            margin: 0 4px;
-            padding: 6px 12px;
+            margin: 0 8px;
+            padding: 8px 16px;
+            font-weight: 500;
         }
         .stButton > button:hover {
             background-color: #FFF9E8;
@@ -29,37 +51,43 @@ st.markdown("""
         .quiz-section {margin: 20px 0; padding: 15px; border-radius: 10px; background-color: #FFF9E8;}
         .end-note {
             text-align: center;
-            margin-top: 40px;
+            margin-top: 50px;
             padding: 20px;
-            border-top: 1px solid #F39C12;
+            border-top: 2px solid #F39C12;
             color: #D35400;
-            font-size: 18px;
+            font-size: 20px !important;
+            font-weight: bold;
         }
     </style>
 """, unsafe_allow_html=True)
 
 # --------------------------
-# 音频配置
+# 音频配置：完全和《安妮的绿山墙》一致
 # --------------------------
 english_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-game/main/Audio/夏洛的网_english.mp3"
 chinese_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-game/main/Audio/夏洛的网_chinese.mp3"
 correct_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-game/main/Audio/correct.mp3"
 wrong_audio_url = "https://raw.githubusercontent.com/eachguo/chloe-reading-game/main/Audio/wrong.mp3"
 
-# 嵌入和《安妮的绿山墙》完全一致的音频播放器
+# 嵌入稳定的音频播放器
 components.html(f"""
     <audio id="correct-audio" src="{correct_audio_url}" preload="auto">
     <audio id="wrong-audio" src="{wrong_audio_url}" preload="auto">
     <script>
+        // 确保在用户交互后才能播放
+        window.addEventListener('click', () => {{
+            document.getElementById('correct-audio').load();
+            document.getElementById('wrong-audio').load();
+        }});
         function playCorrect() {{
             const audio = document.getElementById('correct-audio');
             audio.currentTime = 0;
-            audio.play().catch(e => console.log('播放失败:', e));
+            audio.play().then(() => {{}}).catch(e => console.log('正确提示音播放失败:', e));
         }}
         function playWrong() {{
             const audio = document.getElementById('wrong-audio');
             audio.currentTime = 0;
-            audio.play().catch(e => console.log('播放失败:', e));
+            audio.play().then(() => {{}}).catch(e => console.log('错误提示音播放失败:', e));
         }}
     </script>
 """, height=0)
@@ -81,7 +109,7 @@ st.audio(chinese_audio_url, format="audio/mp3")
 st.caption("中文语音朗读 / Chinese Audio")
 
 # --------------------------
-# 互动选择题（完全对齐《安妮的绿山墙》）
+# 互动选择题（完全对齐）
 # --------------------------
 st.markdown("### 🎯 小测试 / Mini Quiz")
 st.markdown("💡 点击你认为正确的选项，自动播放提示音哦！/ Click the option you think is correct, and a prompt sound will play automatically!")
@@ -155,7 +183,7 @@ with st.container():
         components.html("<script>playWrong()</script>", height=0)
 
 # --------------------------
-# 结尾文案：完全对齐《安妮的绿山墙》
+# 结尾文案：完全对齐
 # --------------------------
 st.markdown("""
     <div class="end-note">
