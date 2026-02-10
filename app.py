@@ -1,64 +1,72 @@
 import streamlit as st
-import asyncio, os, sqlite3, json
-from gtts import gTTS
-from books_data import BOOKS 
+import pandas as pd
+import os
+import asyncio
+import edge_tts
+from books_data import BOOKS # 保留最初的5个内置故事
 
-# ---------------------- 1. 数据库初始化 (加固兼容版) ----------------------
-def init_db():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    db_path = os.path.join(base_dir, 'chloe_library.db')
-    
-    # check_same_thread=False 是为了让云端运行更稳
-    conn = sqlite3.connect(db_path, check_same_thread=False)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS books
-                 (id TEXT PRIMARY KEY, title TEXT, 
-                  content_en TEXT, content_zh TEXT,
-                  audio_en TEXT, audio_zh TEXT,
-                  quiz_json TEXT)''')
-    conn.commit()
-    conn.close()
-    return db_path
-
-DB_FILE = init_db()
-
-# ---------------------- 2. 界面双语导航 (严格遵守双语宪法) ----------------------
+# ---------------------- 1. 主程序配置 ----------------------
 st.set_page_config(page_title="Chloe's Reading Space", page_icon="⚡")
+
+# ---------------------- 2. 魔法装修：背景与双语样式 ----------------------
+def set_bg_style():
+    st.markdown(
+        """
+        <style>
+        .stApp { background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%); }
+        .stSelectbox div[data-baseweb="select"] { border-radius: 15px; border: 2px solid #a1887f; }
+        h1 { color: #5d4037; font-family: 'Comic Sans MS', cursive, sans-serif; text-shadow: 2px 2px 4px #ffffff; }
+        .stButton>button { border-radius: 20px; background-color: #a1887f; color: white; border: none; }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+# ---------------------- 3. 语音生成逻辑 (Edge-TTS) ----------------------
+async def generate_voice(text, filename, voice):
+    communicate = edge_tts.Communicate(text, voice)
+    await communicate.save(filename)
+
+# ---------------------- 4. 云端书库连接 (Google Sheets) ----------------------
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1BXjixKvVt5k1r9S7lqAzSJ_pxujAUZiODUd33KWxMNY/export?format=csv"
+
+def load_data():
+    # 融合本地 BOOKS 和云端 Google Sheets 内容
+    display_books = BOOKS.copy()
+    try:
+        df = pd.read_csv(SHEET_URL)
+        df.columns = [c.strip().lower() for c in df.columns]
+        for _, row in df.iterrows():
+            display_books[str(row['id'])] = {
+                "title": str(row['title']),
+                "content_en": str(row['content_en']),
+                "content_zh": str(row['content_zh']),
+                "audio_en": str(row['audio_en']),
+                "audio_zh": str(row['audio_zh']),
+                "quiz": eval(str(row['quiz_json'])) if (pd.notna(row['quiz_json']) and str(row['quiz_json']).strip() != "") else []
+            }
+    except Exception as e:
+        pass # 如果表格暂不可读，至少还有本地的基础故事
+    return display_books
+
+# ---------------------- 5. 程序运行逻辑 ----------------------
+set_bg_style()
+st.sidebar.title("Navigation | 导航")
 is_admin = st.sidebar.checkbox("姥爷工作模式 | Grandpa Mode")
 
 menu_opts = {
     "Room": "📖 读书屋 | Reading Room", 
-    "Voice": "🎙️ 语音间 | Voice Maker", 
-    "Admin": "⚙️ 后台维护 | Admin"
+    "Voice": "🎙️ 语音间 | Voice Maker"
 }
 
-if not is_admin:
-    menu = [menu_opts["Room"]]
-else:
-    menu = [menu_opts["Room"], menu_opts["Voice"], menu_opts["Admin"]]
+menu = [menu_opts["Room"]] if not is_admin else [menu_opts["Room"], menu_opts["Voice"]]
+page = st.sidebar.radio("Go to:", menu)
 
-page = st.sidebar.radio("导航 | Navigation", menu)
-
-# ---------------------- 3. 页面：读书屋 (容错增强版) ----------------------
+# --- 页面 1：读书屋 ---
 if menu_opts["Room"] in page:
     st.title("🧙‍♂️ Chloe's Magic Space")
+    display_books = load_data()
     
-    # 尝试从数据库读取
-    display_books = BOOKS.copy()
-    try:
-        conn = sqlite3.connect(DB_FILE, check_same_thread=False)
-        c = conn.cursor()
-        db_books = c.execute("SELECT * FROM books").fetchall()
-        conn.close()
-        for b in db_books:
-            display_books[b[0]] = {
-                "title": b[1], "content_en": b[2], "content_zh": b[3],
-                "audio_en": b[4], "audio_zh": b[5],
-                "quiz": json.loads(b[6]) if (len(b) > 6 and b[6]) else []
-            }
-    except Exception as e:
-        st.warning("部分新故事正在路上... | Loading new stories...")
-
     book_key = st.selectbox("挑选你的故事 | Pick your story:", list(display_books.keys()), 
                             format_func=lambda x: display_books[x]["title"])
     book = display_books[book_key]
@@ -79,48 +87,28 @@ if menu_opts["Room"] in page:
         st.subheader("💡 魔法小测试 | Magic Quiz")
         for i, q in enumerate(book["quiz"]):
             st.write(f"**{q['question']}**")
-            ans = st.radio(f"请选择 | Select (Q{i+1}):", q["options"], key=f"q_{book_key}_{i}")
-            if st.button(f"检查答案 | Check Answer (Q{i+1})"):
+            ans = st.radio(f"请选择 | Select:", q["options"], key=f"q_{book_key}_{i}")
+            if st.button(f"检查答案 | Check Answer", key=f"btn_{i}"):
                 if q["options"].index(ans) == q["correct"]:
                     st.success("✨ 太棒了！答对了！ | Perfect! Correct!")
                 else:
                     st.error("🧙‍♂️ 再试一次吧！ | Try again!")
 
-# ---------------------- 4. 语音间 ----------------------
+# --- 页面 2：语音间 ---
 elif menu_opts["Voice"] in page:
-    st.title("🎙️ 语音间 | Voice Maker")
-    txt = st.text_area("输入文字 | Input Text:")
-    f_name = st.text_input("文件名 | File Name (e.g., hp3_en):")
-    if st.button("🚀 生成音频 | Generate Audio"):
-        if not os.path.exists("Audio"): os.makedirs("Audio")
-        target = f"Audio/{f_name.strip()}.mp3"
-        with st.spinner("施法中..."):
-            try:
-                tts = gTTS(text=txt, lang='en' if 'en' in f_name else 'zh')
-                tts.save(target)
-                st.success(f"✅ 成功！ | Done!")
-                st.audio(target)
-            except Exception as e:
-                st.error(f"失败: {e}")
+    st.title("🎙️ 语音工作室 | Voice Maker")
+    text_input = st.text_area("输入文字 | Input Text:")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        lang_type = st.radio("选择语言 | Language:", ["English", "中文"])
+        voice_option = "en-US-AnaNeural" if lang_type == "English" else "zh-CN-XiaoxiaoNeural"
+    with col_b:
+        file_id = st.text_input("书籍编号 (如 hp4):", value="hp4")
+        final_name = f"Audio/{file_id}{'_en' if lang_type == 'English' else '_zh'}.mp3"
 
-# ---------------------- 5. 后台维护 ----------------------
-elif menu_opts["Admin"] in page:
-    st.title("⚙️ 后台维护 | Admin")
-    with st.form("add_form"):
-        bid = st.text_input("编号 | ID")
-        title = st.text_input("书名 | Title")
-        en_txt = st.text_area("英文内容 | English")
-        zh_txt = st.text_area("中文内容 | Chinese")
-        q1 = st.text_input("问题 | Question")
-        opt1 = st.text_input("选项 (逗号隔开) | Options")
-        correct1 = st.number_input("正确项索引 (0/1)", 0, 1)
-        
-        if st.form_submit_button("🚀 存入魔法仓库 | Save"):
-            quiz_data = [{"question": q1, "options": [o.strip() for o in opt1.split(',')], "correct": int(correct1)}]
-            conn = sqlite3.connect(DB_FILE, check_same_thread=False)
-            c = conn.cursor()
-            c.execute("INSERT OR REPLACE INTO books VALUES (?, ?, ?, ?, ?, ?, ?)",
-                      (bid, title, en_txt, zh_txt, f"Audio/{bid}_en.mp3", f"Audio/{bid}_zh.mp3", json.dumps(quiz_data)))
-            conn.commit()
-            conn.close()
-            st.success("✅ 已同步！ | Synced!")
+    if st.button("🚀 生成并试听 | Generate & Listen"):
+        if text_input:
+            if not os.path.exists("Audio"): os.makedirs("Audio")
+            asyncio.run(generate_voice(text_input, final_name, voice_option))
+            st.success(f"已存入本地 Audio 文件夹")
+            st.audio(final_name)
