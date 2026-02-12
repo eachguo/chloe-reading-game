@@ -43,7 +43,7 @@ if df is not None:
 
     st.sidebar.markdown("---")
     with st.sidebar.expander("🛠️ 语音操作间 (精准调速版)", expanded=False):
-        # 语速调节滑块：默认 +20% 让中文听起来更干脆
+        # 语速调节滑块：默认 +30% 让中文听起来更干脆
         cn_speed = st.slider("中文语速调节", -20, 50, 10, step=5, format="%d%%")
         en_speed = st.slider("英文语速调节", -20, 50, 0, step=5, format="%d%%")
         
