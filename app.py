@@ -94,6 +94,6 @@ if df is not None:
                 cols = st.columns(len(opts))
                 for idx, opt in enumerate(opts):
                     if cols[idx].button(opt, key=f"q_{safe_name}_{i}_{idx}"):
-                        if idx == int(corrects[i]): st.success("✨ 答对了！"); st.balloons()
-                        else: st.error("❌ 再想想！")
+                        if idx == int(corrects[i]): st.success("✨ 答对了！ Well done !"); st.balloons()
+                        else: st.error("❌ 再想想！ Try again!")
         except: st.write("题目加载中...")
