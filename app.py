@@ -42,7 +42,7 @@ if df is not None:
     local_en = f"audio/{safe_name}_EN.mp3"
 
     st.sidebar.markdown("---")
-    with st.sidebar.expander("🛠️ 语音操作间 (精准调速版)", expanded=False):
+    with st.sidebar.expander("🛠️ 语音操作间 (姥爷专用)", expanded=False):
         # 语速调节滑块：默认 +70% 让中文听起来更干脆
         cn_speed = st.slider("中文语速调节", -20, 50, 10, step=5, format="%d%%")
         en_speed = st.slider("英文语速调节", -20, 50, 0, step=5, format="%d%%")
