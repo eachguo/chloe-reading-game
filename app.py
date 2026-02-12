@@ -42,12 +42,12 @@ if df is not None:
         st.markdown("### 🎙️ AI 语音工场")
         t_zh = str(row.get('content_zh', ''))
         t_en = str(row.get('content_en', ''))
-        if st.button("🔊 生成中文音频"):
-            gTTS(text=t_zh, lang='zh-cn').save(local_cn)
-            st.rerun()
-        if st.button("📢 生成英文音频"):
-            gTTS(text=t_en, lang='en').save(local_en)
-            st.rerun()
+           if st.button("🔊 生成中文音频"):
+            with st.spinner("中文转换中..."):
+                # 将 slow=True 加入参数中，语速会明显变慢，适合跟读
+                gTTS(text=t_zh, lang='zh-cn', slow=True).save(local_cn)
+                st.success(f"已生成慢速中文音频！")
+                st.rerun() 
 
     # --- 4. 主界面 (大宝阅读区) ---
     st.title(selected_title)
