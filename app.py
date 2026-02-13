@@ -1,99 +1,122 @@
 import streamlit as st
 import pandas as pd
-import time
-import os
-import re
 import asyncio
 import edge_tts
+import os
+import json
 
-# --- 1. 页面配置 & 马卡龙背景 ---
-st.set_page_config(page_title="Chloe's Reading Space", layout="wide")
-st.markdown("""<style>.stApp { background-color: #FFF5F7; } .stSidebar { background-color: #F0F7FF; }</style>""", unsafe_allow_html=True)
+# --- 1. 界面与马卡龙主题 ---
+st.set_page_config(page_title="Chloe's Magic Space", layout="wide")
 
-if not os.path.exists("audio"):
-    os.makedirs("audio")
+st.markdown("""
+    <style>
+    .stApp { background-color: #FFF5F5; }
+    .main-box {
+        background-color: #FFFFFF;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+    }
+    h1 { color: #FF9AA2; font-family: 'Comic Sans MS'; }
+    .stButton>button { background-color: #B2e2f2; border-radius: 10px; width: 100%; }
+    </style>
+    """, unsafe_allow_html=True)
 
-# --- 2. 数据读取 ---
-sh_url = f"https://docs.google.com/spreadsheets/d/1BXjixKvVt5k1r9S7lqAzSJ_pxujAUZiODUd33KWxMNY/gviz/tq?tqx=out:csv&v={int(time.time())}"
-@st.cache_data(ttl=1)
+# 强制转换 CSV 链接并加上随机数防止缓存
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1BXjixKvVt5k1r9S7lqAzSJ_pxujAUZiODUd33KWxMNY/export?format=csv"
+
+# --- 2. 获取数据 (加了缓存清理按钮) ---
+@st.cache_data(ttl=5) # 极短缓存
 def get_data(url):
+    return pd.read_csv(url)
+
+if st.sidebar.button("🔄 刷新表格数据"):
+    st.cache_data.clear()
+    st.rerun()
+
+try:
+    df = get_data(SHEET_URL)
+except Exception as e:
+    st.error(f"连接魔法书架失败: {e}")
+    st.stop()
+
+# --- 3. 章节选择 ---
+st.sidebar.title("📚 魔法书架")
+chapter_options = df['title'].tolist()
+selected_title = st.sidebar.selectbox("去哪一章？", chapter_options)
+row = df[df['title'] == selected_title].iloc[0]
+
+# 统一 ID 识别
+current_id = str(row.get('id', 'temp')).strip().lower()
+
+# --- 4. 语音实验室 (语速调节藏在里面) ---
+with st.sidebar.expander("🛠️ 语音实验室 (姥爷专用)", expanded=False):
+    cn_speed = st.slider("中文语速 (%)", -50, 50, 15, key="cn_sp")
+    en_speed = st.slider("英文语速 (%)", -50, 50, 0, key="en_sp")
+    
+    # 自动识别文件夹名 (Audio 或 audio)
+    audio_folder = "Audio" if os.path.exists("Audio") else "audio"
+    if not os.path.exists(audio_folder):
+        os.makedirs(audio_folder)
+        
+    path_zh = f"{audio_folder}/{current_id}_zh.mp3"
+    path_en = f"{audio_folder}/{current_id}_en.mp3"
+
+    if st.button("🔊 重新生成当前页语音"):
+        async def make_audio():
+            await edge_tts.Communicate(row['content_zh'], "zh-CN-XiaoxiaoNeural", rate=f"{'+' if cn_speed>=0 else ''}{cn_speed}%").save(path_zh)
+            await edge_tts.Communicate(row['content_en'], "en-US-EmmaNeural", rate=f"{'+' if en_speed>=0 else ''}{en_speed}%").save(path_en)
+        asyncio.run(make_audio())
+        st.success("✅ 语音已重制！")
+        st.rerun()
+
+# --- 5. 主界面内容 ---
+st.title(f"📖 {row['title']}")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.markdown('<div class="main-box">', unsafe_allow_html=True)
+    st.subheader("🇨🇳 中文故事")
+    st.write(row['content_zh'])
+    if os.path.exists(path_zh):
+        st.audio(path_zh)
+    else:
+        st.info(f"等待同步: {path_zh}")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col2:
+    st.markdown('<div class="main-box">', unsafe_allow_html=True)
+    st.subheader("🇨🇦 English Story")
+    st.write(row['content_en'])
+    if os.path.exists(path_en):
+        st.audio(path_en)
+    else:
+        st.info(f"Waiting for audio: {path_en}")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# --- 6. 问答环节 (增强版) ---
+st.markdown("---")
+st.subheader("🧠 魔法小测试 | Quiz")
+
+quiz_raw = row.get('quiz_json', '')
+if pd.notna(quiz_raw) and str(quiz_raw).strip() != "":
     try:
-        df = pd.read_csv(url)
-        df.columns = [c.strip() for c in df.columns]
-        return df
-    except: return None
-
-df = get_data(sh_url)
-
-# 异步生成语音函数
-async def generate_speech(text, voice, speed, output_path):
-    # speed 格式如 "+10%" 或 "-10%"
-    communicate = edge_tts.Communicate(text, voice, rate=speed)
-    await communicate.save(output_path)
-
-if df is not None:
-    # --- 3. 侧边栏 ---
-    st.sidebar.title("🌈 Chloe's Space")
-    selected_title = st.sidebar.selectbox("📖 选择章节 | Select Chapter", df['title'].tolist())
-    row = df[df['title'] == selected_title].iloc[0]
-
-    safe_name = re.sub(r'[\\/:*?"<>|]', '_', selected_title)
-    local_cn = f"audio/{safe_name}_CN.mp3"
-    local_en = f"audio/{safe_name}_EN.mp3"
-
-    st.sidebar.markdown("---")
-    with st.sidebar.expander("🛠️ 语音操作间 (姥爷专用)", expanded=False):
-        # 语速调节滑块：默认 +70% 让中文听起来更干脆
-        cn_speed = st.slider("中文语速调节", -20, 50, 10, step=5, format="%d%%")
-        en_speed = st.slider("英文语速调节", -20, 50, 0, step=5, format="%d%%")
+        # 处理中文引号问题
+        clean_json = str(quiz_raw).replace('“', '"').replace('”', '"').replace('‘', "'").replace('’', "'")
+        quiz_data = json.loads(clean_json)
         
-        t_zh = str(row.get('content_zh', ''))
-        t_en = str(row.get('content_en', ''))
-
-        if st.button("🔊 生成中文音频 (快速版)"):
-            with st.spinner("正在用高级引擎转换中文..."):
-                speed_str = f"{'+' if cn_speed>=0 else ''}{cn_speed}%"
-                asyncio.run(generate_speech(t_zh, "zh-CN-XiaoxiaoNeural", speed_str, local_cn))
-                st.rerun()
-        
-        if st.button("📢 生成英文音频"):
-            with st.spinner("正在转换英文..."):
-                speed_str = f"{'+' if en_speed>=0 else ''}{en_speed}%"
-                asyncio.run(generate_speech(t_en, "en-US-EmmaNeural", speed_str, local_en))
-                st.rerun()
-
-    # --- 4. 主界面 ---
-    st.title(selected_title)
-    st.write(row.get('content_zh', ''))
-    st.write(f"**{row.get('content_en', '')}**")
-
-    # --- 5. 播放器 ---
-    st.write("---")
-    cloud_url = str(row.get('audio_url', '')).strip()
-    if "http" in cloud_url and not cloud_url.startswith('nan'):
-        st.audio(cloud_url)
-    elif os.path.exists(local_cn) or os.path.exists(local_en):
-        st.write("🔊 **语音内容已就绪 | Audio Ready**")
-        c1, c2 = st.columns(2)
-        if os.path.exists(local_cn):
-            with c1: st.write("🇨🇳 中文"); st.audio(local_cn)
-        if os.path.exists(local_en):
-            with c2: st.write("🇬🇧 英文"); st.audio(local_en)
-
-    # --- 6. 问答环节 (正则版) ---
-    st.divider()
-    qz = str(row.get('quiz_json', ''))
-    if qz and "[" in qz:
-        try:
-            questions = re.findall(r'\"question\":\s*\"(.*?)\"', qz)
-            options_raw = re.findall(r'\"options\":\s*\[(.*?)\]', qz)
-            corrects = re.findall(r'\"correct\":\s*(\d+)', qz)
-            for i in range(len(questions)):
-                st.write(f"**Q{i+1}: {questions[i]}**")
-                opts = [o.strip().strip('"').strip("'") for o in options_raw[i].split(',')]
-                cols = st.columns(len(opts))
-                for idx, opt in enumerate(opts):
-                    if cols[idx].button(opt, key=f"q_{safe_name}_{i}_{idx}"):
-                        if idx == int(corrects[i]): st.success("✨ 答对了！ Well done !"); st.balloons()
-                        else: st.error("❌ 再想想！ Try again!")
-        except: st.write("题目加载中...")
+        for i, q in enumerate(quiz_data):
+            st.write(f"**Q{i+1}: {q['question']}**")
+            user_choice = st.radio("选择答案:", q['options'], key=f"radio_{current_id}_{i}")
+            if st.button(f"提交答案 {i+1}", key=f"btn_{current_id}_{i}"):
+                if q['options'].index(user_choice) == int(q['correct']):
+                    st.success("✨ 太棒了！答对了！")
+                    st.balloons()
+                else:
+                    st.error("❌ 哎呀，再想想看？")
+    except Exception as e:
+        st.warning(f"问答格式有误，请检查表格 JSON 格式。")
+else:
+    st.info("这一章还没有准备好谜题哦。")
