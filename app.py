@@ -4,6 +4,7 @@ import asyncio
 import edge_tts
 import os
 import json
+import random
 
 # --- 1. 界面与马卡龙主题 ---
 st.set_page_config(page_title="Chloe's Magic Space", layout="wide")
@@ -13,110 +14,116 @@ st.markdown("""
     .stApp { background-color: #FFF5F5; }
     .main-box {
         background-color: #FFFFFF;
+        padding: 25px;
+        border-radius: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        margin-bottom: 25px;
+    }
+    .quiz-card {
+        background-color: #FFFFFF;
         padding: 20px;
         border-radius: 15px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border: 2px solid #E0F2F1;
         margin-bottom: 20px;
+        text-align: center;
     }
-    h1 { color: #FF9AA2; font-family: 'Comic Sans MS'; }
-    .stButton>button { background-color: #B2e2f2; border-radius: 10px; width: 100%; }
+    h1 { color: #FF9AA2; font-family: 'Comic Sans MS', sans-serif; text-align: center; }
+    /* 选项按钮样式：让它看起来像马卡龙颜色的卡片 */
+    .stButton>button {
+        width: 100%;
+        border-radius: 20px;
+        border: 2px solid #B2e2f2;
+        background-color: #F0FBFF;
+        color: #444;
+        font-size: 18px;
+        padding: 12px;
+        margin-bottom: 10px;
+        transition: 0.3s;
+    }
+    .stButton>button:hover {
+        background-color: #FFD1DC; /* 鼠标悬停变粉色 */
+        border-color: #FFB7B2;
+        transform: scale(1.02);
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# 强制转换 CSV 链接并加上随机数防止缓存
+# Google Sheets CSV 导出地址
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1BXjixKvVt5k1r9S7lqAzSJ_pxujAUZiODUd33KWxMNY/export?format=csv"
 
-# --- 2. 获取数据 (加了缓存清理按钮) ---
-@st.cache_data(ttl=5) # 极短缓存
+@st.cache_data(ttl=5)
 def get_data(url):
     return pd.read_csv(url)
 
-if st.sidebar.button("🔄 刷新表格数据"):
+if st.sidebar.button("🔄 同步魔法书架"):
     st.cache_data.clear()
     st.rerun()
 
 try:
     df = get_data(SHEET_URL)
 except Exception as e:
-    st.error(f"连接魔法书架失败: {e}")
+    st.error(f"连接失败: {e}")
     st.stop()
 
-# --- 3. 章节选择 ---
+# --- 2. 章节选择 ---
 st.sidebar.title("📚 魔法书架")
 chapter_options = df['title'].tolist()
 selected_title = st.sidebar.selectbox("去哪一章？", chapter_options)
 row = df[df['title'] == selected_title].iloc[0]
-
-# 统一 ID 识别
 current_id = str(row.get('id', 'temp')).strip().lower()
 
-# --- 4. 语音实验室 (语速调节藏在里面) ---
-with st.sidebar.expander("🛠️ 语音实验室 (姥爷专用)", expanded=False):
-    cn_speed = st.slider("中文语速 (%)", -50, 50, 15, key="cn_sp")
-    en_speed = st.slider("英文语速 (%)", -50, 50, 0, key="en_sp")
-    
-    # 自动识别文件夹名 (Audio 或 audio)
-    audio_folder = "Audio" if os.path.exists("Audio") else "audio"
-    if not os.path.exists(audio_folder):
-        os.makedirs(audio_folder)
-        
-    path_zh = f"{audio_folder}/{current_id}_zh.mp3"
-    path_en = f"{audio_folder}/{current_id}_en.mp3"
+# --- 3. 语音逻辑 ---
+audio_folder = "Audio" if os.path.exists("Audio") else "audio"
+path_zh = f"{audio_folder}/{current_id}_zh.mp3"
+path_en = f"{audio_folder}/{current_id}_en.mp3"
 
-    if st.button("🔊 重新生成当前页语音"):
-        async def make_audio():
-            await edge_tts.Communicate(row['content_zh'], "zh-CN-XiaoxiaoNeural", rate=f"{'+' if cn_speed>=0 else ''}{cn_speed}%").save(path_zh)
-            await edge_tts.Communicate(row['content_en'], "en-US-EmmaNeural", rate=f"{'+' if en_speed>=0 else ''}{en_speed}%").save(path_en)
-        asyncio.run(make_audio())
-        st.success("✅ 语音已重制！")
-        st.rerun()
-
-# --- 5. 主界面内容 ---
-st.title(f"📖 {row['title']}")
+# --- 4. 主界面内容 ---
+st.title(f"🪄 {row['title']}")
 
 col1, col2 = st.columns(2)
-
 with col1:
     st.markdown('<div class="main-box">', unsafe_allow_html=True)
     st.subheader("🇨🇳 中文故事")
     st.write(row['content_zh'])
-    if os.path.exists(path_zh):
-        st.audio(path_zh)
-    else:
-        st.info(f"等待同步: {path_zh}")
+    if os.path.exists(path_zh): st.audio(path_zh)
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col2:
     st.markdown('<div class="main-box">', unsafe_allow_html=True)
     st.subheader("🇨🇦 English Story")
     st.write(row['content_en'])
-    if os.path.exists(path_en):
-        st.audio(path_en)
-    else:
-        st.info(f"Waiting for audio: {path_en}")
+    if os.path.exists(path_en): st.audio(path_en)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- 6. 问答环节 (增强版) ---
+# --- 5. 互动式问答 (即时反馈版) ---
 st.markdown("---")
-st.subheader("🧠 魔法小测试 | Quiz")
+st.subheader("🧠 魔法小测试 | Quiz Time!")
+
+# 有趣的反馈语库
+success_messages = ["✨ 哇！Chloe 是不是偷偷用了魔法？全对！", "🎉 太棒了！你是霍格沃茨的一流学生！", "🌈 击掌！(High Five!) 你读得非常仔细！"]
+wrong_messages = ["🤔 哎呀，分院帽说这个答案不太对哦，再试试？", "🕯️ 这里的灯光有点暗，再回故事里找找线索？", "🐾 差点就猜对了！再给魔法一个机会？"]
 
 quiz_raw = row.get('quiz_json', '')
 if pd.notna(quiz_raw) and str(quiz_raw).strip() != "":
     try:
-        # 处理中文引号问题
         clean_json = str(quiz_raw).replace('“', '"').replace('”', '"').replace('‘', "'").replace('’', "'")
         quiz_data = json.loads(clean_json)
         
         for i, q in enumerate(quiz_data):
-            st.write(f"**Q{i+1}: {q['question']}**")
-            user_choice = st.radio("选择答案:", q['options'], key=f"radio_{current_id}_{i}")
-            if st.button(f"提交答案 {i+1}", key=f"btn_{current_id}_{i}"):
-                if q['options'].index(user_choice) == int(q['correct']):
-                    st.success("✨ 太棒了！答对了！")
-                    st.balloons()
-                else:
-                    st.error("❌ 哎呀，再想想看？")
-    except Exception as e:
-        st.warning(f"问答格式有误，请检查表格 JSON 格式。")
+            st.markdown(f'<div class="quiz-card">', unsafe_allow_html=True)
+            st.markdown(f"#### ❓ Question {i+1}")
+            st.write(f"**{q['question']}**")
+            
+            correct_idx = int(q['correct'])
+            for idx, option in enumerate(q['options']):
+                if st.button(option, key=f"opt_{current_id}_{i}_{idx}"):
+                    if idx == correct_idx:
+                        st.success(random.choice(success_messages))
+                        st.balloons()
+                    else:
+                        st.error(random.choice(wrong_messages))
+            st.markdown('</div>', unsafe_allow_html=True)
+    except Exception:
+        st.warning("⚠️ 问答加载出错，快去检查一下表格吧。")
 else:
-    st.info("这一章还没有准备好谜题哦。")
+    st.info("这一章还没有准备好谜题。")
